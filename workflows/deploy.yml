@@ -1,9 +1,9 @@
-name: Deploy To-Do List to GitHub Pages
+name: Build and Deploy To-Do List
 
 on:
   push:
-    branches: [ "main" ]   # Deploy only when pushing to main branch
-  workflow_dispatch:       # Allow manual runs from GitHub UI
+    branches: [ "main" ]   # Run on push to main branch
+  workflow_dispatch:       # Allow manual trigger from Actions tab
 
 permissions:
   contents: read
@@ -15,19 +15,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # (Optional) Build step goes here if you later add npm, webpack, etc.
+      # Detect Node.js project
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
+      # Install & build if package.json exists
+      - name: Install dependencies
+        if: hashFiles('package-lock.json') != '' || hashFiles('yarn.lock') != ''
+        run: npm ci
+
+      - name: Build project
+        if: hashFiles('package.json') != ''
+        run: npm run build
+
+      # Choose what to deploy:
+      # If a build was generated, use dist/ (common for Vite/React/etc.)
+      # Otherwise deploy the whole repo (static HTML/CSS/JS)
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .   # Deploy everything in the root (index.html, etc.)
+          path: ${{ (hashFiles('package.json') != '') && 'dist' || '.' }}
 
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
