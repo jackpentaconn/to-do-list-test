@@ -1,0 +1,33 @@
+name: Deploy To-Do List to GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]   # Deploy only when pushing to main branch
+  workflow_dispatch:       # Allow manual runs from GitHub UI
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # (Optional) Build step goes here if you later add npm, webpack, etc.
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .   # Deploy everything in the root (index.html, etc.)
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
